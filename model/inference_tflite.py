@@ -1,3 +1,7 @@
+import tensorflow as tf
+import numpy as np
+import cv2
+
 class InferenceTflite(object):
     def __init__(self,path_to_model:str):
         self.interpreter = tf.lite.Interpreter(model_path=path_to_model)
