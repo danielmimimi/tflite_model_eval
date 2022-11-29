@@ -226,7 +226,10 @@ class Evaluation(object):
 
         # save images
         for index, s in self.summarized_results.iterrows():
-            img = self.images_analyzed[s.imageId+".jpg"].copy()
+            if ".jpg" in s.imageId:
+                img = self.images_analyzed[s.imageId].copy()
+            else:
+                img = self.images_analyzed[s.imageId+".jpg"].copy()
             gt = s.groundTruth[self.categoryName]
             pred = s.prediction[self.categoryName]
             tp = s.truePositives[self.categoryName]
@@ -266,13 +269,13 @@ class Evaluation(object):
     
     def _drawRectangle(self,img, output, color, score=None):
         start = [int(np.round(v)) for v in output[:2]]
-        end = [int(np.round(v1+v2)) for v1, v2 in zip(output[2:4], output[:2])]
+        end = [int(np.round(v)) for v in output[2:4]]
+        #end = [int(np.round(v1+v2)) for v1, v2 in zip(output[2:4], output[:2])]
         img = cv2.rectangle(img, start, end, color, thickness=1)
 
         if not score is None:
             scoreString = '{:.2f}'.format(score)
             img = cv2.putText(img, scoreString, (output[:2] - [0, 2]).astype(int), cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1, cv2.LINE_AA)
-
         return img
 
     def _convert_results(self,summarized_results):
