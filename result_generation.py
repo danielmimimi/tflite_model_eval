@@ -2,14 +2,14 @@
 
 
 from pathlib import Path
-import shutil
+
 from dataset_reader import AbstractDatasetReader
 from inference_tflite_model import AbstractInferenceModel
 import numpy as np
 import copy
 import os
 
-class Evaluation(object):
+class ResultGeneration(object):
     def __init__(self,dataset_reader:AbstractDatasetReader,model:AbstractInferenceModel,save_path:Path,load:str,filter_low_score:float,iou_threshold:float,save_only:bool) -> None:
         self.dataset_reader = dataset_reader
         self.inference_model = model
@@ -20,24 +20,7 @@ class Evaluation(object):
         self.categoryName = "person"
         self.save_only = save_only
         
-    def export_images_with_bounding_boxes(self,summarized_results, images_analyzed):
-        correctImagesPath = {self.categoryName: []}
-        fpImagePaths = {self.categoryName: []}
-        fnImagePaths = {self.categoryName: []}
-        exportDirCorrect = self.save_path.joinpath('correctImg_{}'.format(self.categoryName))
-        exportDirFp = self.save_path.joinpath('falsePosImg_{}'.format(self.categoryName))
-        exportDirFn = self.save_path.joinpath('falseNegImg_{}'.format(self.categoryName))
-        for dir_ in [exportDirCorrect, exportDirFp, exportDirFn]:
-            if dir_.exists():
-                print('\n export folder found and will be deleted: {}'.format(str(dir_)))
-                shutil.rmtree(str(dir_))
-                
-            # get data frames
-        df_fp = self.getFalsePositives(df, self.categoryName) # false positives
-        df_fn = self.getFalseNegatives(df, self.categoryName) # false negatives
-        df_correct = self.getTruePositives(df, self.categoryName) # all corrects
 
-    
     def start_evaluation(self):
         number_of_images = self.dataset_reader.get_number_of_images()
         image_dict = {}
@@ -170,26 +153,3 @@ class Evaluation(object):
         inter = (np.minimum(box1[:, None, 2:4], box2[:, 2:]) - np.maximum(box1[:, None, :2], box2[:, :2])).clip(0,None).prod(2)
         return inter / (area1[:, None] + area2 - inter)  # iou = inter / (area1 + area2 - inter)
 
-    def getNumPositives(self,df, part):
-        return int(df['groundTruth'].apply(lambda x: len(x[part])).sum())
-
-    def getNumTruePositives(self,df, part):
-        return int(df['truePositives'].apply(lambda x: x[part].sum()).sum())
-
-    def getNumFalsePositives(self,df, part):
-        return int(df['falsePositives'].apply(lambda x: x[part].sum()).sum())
-
-    def getNumFalseNegatives(self,df, part):
-        return int(df['falseNegatives'].apply(lambda x: x[part].sum()).sum())
-
-    def getFalsePositives(self,df, part):
-        return df[df['falsePositives'].apply(lambda x: x[part].sum()) > 0]
-
-    def getFalseNegatives(self,df, part):
-        return df[df['falseNegatives'].apply(lambda x: x[part].sum()) > 0]
-
-    def getTruePositives(self,df, part):
-        noFalseNegatives = df['falseNegatives'].apply(lambda x: x[part].sum() == 0)
-        noFalsePositives = df['falsePositives'].apply(lambda x: x[part].sum() == 0)
-
-        return df[(noFalseNegatives & noFalsePositives)]
