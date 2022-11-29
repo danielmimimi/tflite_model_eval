@@ -1,38 +1,58 @@
 
 
 
+from pathlib import Path
+import shutil
 from dataset_reader import AbstractDatasetReader
 from inference_tflite_model import AbstractInferenceModel
 import numpy as np
 import copy
+import os
 
 class Evaluation(object):
-    def __init__(self,dataset_reader:AbstractDatasetReader,model:AbstractInferenceModel,load:bool,filter_low_score:float) -> None:
+    def __init__(self,dataset_reader:AbstractDatasetReader,model:AbstractInferenceModel,save_path:Path,load:str,filter_low_score:float,iou_threshold:float,save_only:bool) -> None:
         self.dataset_reader = dataset_reader
         self.inference_model = model
         self.load = load
         self.filter_low_score = filter_low_score
+        self.iou_threshold = iou_threshold
+        self.save_path = save_path
+        self.categoryName = "person"
+        self.save_only = save_only
         
+    def export_images_with_bounding_boxes(self,summarized_results, images_analyzed):
+        correctImagesPath = {self.categoryName: []}
+        fpImagePaths = {self.categoryName: []}
+        fnImagePaths = {self.categoryName: []}
+        exportDirCorrect = self.save_path.joinpath('correctImg_{}'.format(self.categoryName))
+        exportDirFp = self.save_path.joinpath('falsePosImg_{}'.format(self.categoryName))
+        exportDirFn = self.save_path.joinpath('falseNegImg_{}'.format(self.categoryName))
+        for dir_ in [exportDirCorrect, exportDirFp, exportDirFn]:
+            if dir_.exists():
+                print('\n export folder found and will be deleted: {}'.format(str(dir_)))
+                shutil.rmtree(str(dir_))
+                
+            # get data frames
+        df_fp = self.getFalsePositives(df, self.categoryName) # false positives
+        df_fn = self.getFalseNegatives(df, self.categoryName) # false negatives
+        df_correct = self.getTruePositives(df, self.categoryName) # all corrects
+
+    
     def start_evaluation(self):
         number_of_images = self.dataset_reader.get_number_of_images()
         image_dict = {}
         summarized_resuls = []
         
         if not self.load: 
-            for index in range(0,number_of_images):
+            for _ in range(0,number_of_images):
                 resized_image,ground_truth_bbox,image_identifier = self.dataset_reader.read_next_sample()
-                predict_bbox, detected_scores = self.inference_model.predict(resized_image)
-                predict_bbox, detected_scores = self._filterLowConfidence(predict_bbox, detected_scores)
-                try:
-                    pred = np.concatenate((np.array(predict_bbox, dtype=np.float32), np.array(detected_scores, dtype=np.float32).reshape(-1,1)), axis=1)
-                except:
-                    pred = np.array([]).reshape((0, 5))
+                pred = self._predict_and_filter(resized_image)
+                
                 label = np.array((ground_truth_bbox), dtype=np.float32)
-                predDict = {categoryName: pred}
-                labelDict = {categoryName: label}
+                predDict = {self.categoryName: pred}
+                labelDict = {self.categoryName: label}
 
-                categoryName = "Person"
-                tp, fp, fn = self._getMetrics(copy.deepcopy(predDict), copy.deepcopy(labelDict), [categoryName], iouThreshold)
+                tp, fp, fn = self._getMetrics(copy.deepcopy(predDict), copy.deepcopy(labelDict), [self.categoryName], self.iou_threshold)
 
                 d = {
                     'imageId': image_identifier,
@@ -42,16 +62,30 @@ class Evaluation(object):
                     'falsePositives': fp,
                     'falseNegatives': fn,
                 }
-                # s = pd.Series(d)
+
                 summarized_resuls.append(d)
                 img = np.array(resized_image)[..., (2,1,0)] # rgb to bgr
                 image_dict[image_identifier] = img
+            if self.save_only:
+                model_name = self.inference_model.get_model_name()
+                model_dir = self.inference_model.get_model_dir()
+                np.save(os.path.join(model_dir,"saves",model_name+".npy"),summarized_resuls)
         else:
-             for index in range(0,number_of_images):
+            summarized_resuls = np.load(self.load,allow_pickle=True)
+            for _ in range(0,number_of_images):
                 resized_image,ground_truth_bbox,image_identifier = self.dataset_reader.read_next_sample()
                 img = np.array(resized_image)[..., (2,1,0)] # rgb to bgr
                 image_dict[image_identifier] = img
-                np.load()
+        return summarized_resuls,image_dict
+        
+    def _predict_and_filter(self,resized_image):
+        predict_bbox, detected_scores = self.inference_model.predict(resized_image)
+        predict_bbox, detected_scores = self._filterLowConfidence(predict_bbox, detected_scores)
+        try:
+            pred = np.concatenate((np.array(predict_bbox, dtype=np.float32), np.array(detected_scores, dtype=np.float32).reshape(-1,1)), axis=1)
+        except:
+            pred = np.array([]).reshape((0, 5))
+        return pred
 
     def _filterLowConfidence(self,predBbox, predScores):
         predBboxNew = []
@@ -136,3 +170,26 @@ class Evaluation(object):
         inter = (np.minimum(box1[:, None, 2:4], box2[:, 2:]) - np.maximum(box1[:, None, :2], box2[:, :2])).clip(0,None).prod(2)
         return inter / (area1[:, None] + area2 - inter)  # iou = inter / (area1 + area2 - inter)
 
+    def getNumPositives(self,df, part):
+        return int(df['groundTruth'].apply(lambda x: len(x[part])).sum())
+
+    def getNumTruePositives(self,df, part):
+        return int(df['truePositives'].apply(lambda x: x[part].sum()).sum())
+
+    def getNumFalsePositives(self,df, part):
+        return int(df['falsePositives'].apply(lambda x: x[part].sum()).sum())
+
+    def getNumFalseNegatives(self,df, part):
+        return int(df['falseNegatives'].apply(lambda x: x[part].sum()).sum())
+
+    def getFalsePositives(self,df, part):
+        return df[df['falsePositives'].apply(lambda x: x[part].sum()) > 0]
+
+    def getFalseNegatives(self,df, part):
+        return df[df['falseNegatives'].apply(lambda x: x[part].sum()) > 0]
+
+    def getTruePositives(self,df, part):
+        noFalseNegatives = df['falseNegatives'].apply(lambda x: x[part].sum() == 0)
+        noFalsePositives = df['falsePositives'].apply(lambda x: x[part].sum() == 0)
+
+        return df[(noFalseNegatives & noFalsePositives)]

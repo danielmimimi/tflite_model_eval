@@ -1,3 +1,4 @@
+from pathlib import Path
 import tensorflow as tf
 import numpy as np
 import cv2
@@ -15,7 +16,15 @@ class AbstractInferenceModel(ABC):
     @abstractmethod
     def predict(self,image:np.array):
         pass
-
+    
+    @abstractmethod
+    def get_model_name(self)->str:
+        pass
+    
+    @abstractmethod
+    def get_model_dir(self)->str:
+        pass
+    
 class InferenceTflitemodel(AbstractInferenceModel):
     def __init__(self,path_to_model:str):
         super().__init__(path_to_model)
@@ -51,3 +60,11 @@ class InferenceTflitemodel(AbstractInferenceModel):
     
     def get_image_size(self):
         return self.input_image_size
+     
+    def get_model_name(self)->str:
+        model_path = Path(self.path_to_model)
+        return model_path.stem
+    
+    def get_model_dir(self)->str:
+        model_path = Path(self.path_to_model)
+        return model_path.parent
