@@ -134,7 +134,10 @@ class InferenceTfliteImx8Yolov5Npumodel(AbstractInferenceModel):
     
     def _prepare_yolo_output(self,output_data):
         hight,width = self.input_image_size[1:3]
+        conf_threshold = 0.2
         x=np.squeeze(output_data)
+        xc=x[...,4]>conf_threshold
+        x=x[xc]
         nms_threshold=0.45
         max_wh = 7680  
         
@@ -232,7 +235,12 @@ class InferenceTfliteImx8Yolov5Cpumodel(AbstractInferenceModel):
         
     def _prepare_yolo_output(self,output_data):
         hight,width = self.input_image_size[1:3]
+        
+        conf_threshold = 0.2
         x=np.squeeze(output_data)
+        xc=x[...,4]>conf_threshold
+        x=x[xc]
+        
         nms_threshold=0.45
         max_wh = 7680  
         
