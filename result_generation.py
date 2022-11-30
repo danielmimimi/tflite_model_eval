@@ -58,7 +58,7 @@ class ResultGeneration(object):
                 tp, fp, fn = self._getMetrics(copy.deepcopy(predDict), copy.deepcopy(labelDict), [self.categoryName], self.iou_threshold)
 
                 
-                if self.peak_results_path and _ % 50:
+                if self.peak_results_path and _ % 50 == 0:
                     self._drawRectangle(resized_image,pred,ground_truth_bbox,self.peak_results_path,image_identifier)
                 
                 d = {
