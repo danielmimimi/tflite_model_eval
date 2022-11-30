@@ -1,9 +1,9 @@
 import argparse
 from pathlib import Path
 
-from dataset_reader import AbstractDatasetReader, ImageAnnotationReader, TfRecordReader
+from dataset_reader import ImageAnnotationReader, TfRecordReader
 from result_generation import ResultGeneration
-from inference_tflite_model import InferenceTflitemodel
+from inference_tflite_model import InferenceTfliteEfficientmodel, InferenceTflitemodel
 from datetime import datetime
 from eval import Evaluation
 def str2bool(v):
@@ -21,16 +21,17 @@ parser = argparse.ArgumentParser(
                     description = 'What the program does',
                     epilog = 'Text at the bottom of help')
 
-parser.add_argument('-m','--model_path',default="/tflite_model_eval/test/model/ssdlite_1_320_320_COCO_trial_009.tflite")
+parser.add_argument('-m','--model_path',default="/tflite_model_eval/test/model/efficient_det_1_320_320_002.tflite")
 parser.add_argument('-t','--test_images_path',default="/tflite_model_eval/test/data/record")
 parser.add_argument('-s','--save_path',default="/tflite_model_eval/test/save")
 # parser.add_argument('-l','--only_load', type=str2bool, nargs='?',const=True, default=False)
-parser.add_argument('-l','--only_load_path',default="/tflite_model_eval/test/model/saves/ssdlite_1_320_320_COCO_trial_009_npu.npy")
+parser.add_argument('-l','--only_load_path',default="")
 parser.add_argument('-d','--test_data_type',default="regular")
-parser.add_argument('-n','--output_name',default="CPU_WINDOWS")
+parser.add_argument('-n','--output_name',default="CPU_WINDOW_SEFFICIENT_")
 parser.add_argument('-f','--filter_low_score',default=0.0)
 parser.add_argument('-i','--iou_treshold',default=0.5)
 parser.add_argument('-o','--save_only', type=str2bool, nargs='?',const=True, default=False)
+parser.add_argument('-x','--model_type_selected', default="efficient")
 
 args = parser.parse_args()
 
@@ -43,7 +44,13 @@ def create_output_file_name(args):
 if __name__ == '__main__':
     args = parser.parse_args()
     
-    model = InferenceTflitemodel(args.model_path)
+    if args.model_type_selected == "ssd":
+        model = InferenceTflitemodel(args.model_path)
+    elif args.model_type_selected == "efficient":
+        model = InferenceTfliteEfficientmodel(args.model_path)
+    else:
+        raise Exception("No possible model selected")
+        
     
     # LOAD DATASET
     if args.test_data_type == "regular" : 
