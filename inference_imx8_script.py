@@ -2,6 +2,7 @@ import argparse
 from dataset_reader import ImageAnnotationReader
 from inference.inference_tflite_imx8_ssd_model import InferenceTfliteImx8SsdNpumodel,InferenceTfliteImx8SsdCpumodel
 from inference.inference_tflite_imx8_efficient_model import InferenceTfliteImx8EfficientCpumodel,InferenceTfliteImx8EfficientNpumodel
+from inference.inference_tflite_imx8_yolov5_model import InferenceTfliteImx8Yolov5Cpumodel, InferenceTfliteImx8Yolov5Npumodel
 
 from result_generation import ResultGeneration
 
@@ -35,6 +36,8 @@ if __name__ == '__main__':
             model = InferenceTfliteImx8EfficientCpumodel(args.model_path)
         elif "ssdlite" in args.model_path:
             model = InferenceTfliteImx8SsdCpumodel(args.model_path)
+        elif "yolov5" in args.model_path:
+            model = InferenceTfliteImx8Yolov5Cpumodel(args.model_path)
         else:
             raise Exception("No possible model selected")
     elif args.delegate_path == "/usr/lib/libvx_delegate.so":
@@ -42,6 +45,8 @@ if __name__ == '__main__':
             model = InferenceTfliteImx8EfficientNpumodel(args.model_path)
         elif "ssdlite" in args.model_path:
             model = InferenceTfliteImx8SsdNpumodel(args.model_path)
+        elif "yolov5" in args.model_path:
+            model = InferenceTfliteImx8Yolov5Npumodel(args.model_path)
         else:
             raise Exception("No possible model selected")
     else:
