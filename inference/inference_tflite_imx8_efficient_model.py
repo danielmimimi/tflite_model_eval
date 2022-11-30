@@ -1,14 +1,14 @@
 from pathlib import Path
-import tensorflow as tf
-import numpy as np
-import cv2
-
 from inference.abstract_inference_model import AbstractInferenceModel
-    
-class InferenceTflitemodel(AbstractInferenceModel):
+import tflite_runtime.interpreter as tflite
+import cv2 
+import numpy as np
+
+class InferenceTfliteImx8EfficientNpumodel(AbstractInferenceModel):
     def __init__(self,path_to_model:str):
         super().__init__(path_to_model)
-        self.interpreter = tf.lite.Interpreter(model_path=self.path_to_model)
+        delegate = [tflite.load_delegate("/usr/lib/libvx_delegate.so")]
+        self.interpreter = tflite.Interpreter(model_path=self.path_to_model,experimental_delegates=delegate)
         self.interpreter.allocate_tensors()
         self.model_input_details = self.interpreter.get_input_details()
         self.model_output_details = self.interpreter.get_output_details()
@@ -29,9 +29,9 @@ class InferenceTflitemodel(AbstractInferenceModel):
         self.interpreter.invoke()
         hight,width = self.input_image_size[1:3]
         # get realtive bbox coords
-        detected_class_labels =  np.squeeze(self.interpreter.get_tensor(self.model_output_details[1]['index']).astype(int))
-        detected_boxes =  np.squeeze(self.interpreter.get_tensor( self.model_output_details[0]['index']))
-        detected_scores =  np.squeeze(self.interpreter.get_tensor( self.model_output_details[2]['index']))
+        detected_class_labels =  np.squeeze(self.interpreter.get_tensor(self.model_output_details[3]['index']).astype(int))
+        detected_boxes =  np.squeeze(self.interpreter.get_tensor( self.model_output_details[1]['index']))
+        detected_scores =  np.squeeze(self.interpreter.get_tensor( self.model_output_details[0]['index']))
 
         detected_boxes = detected_boxes[:, (1,0,3,2)]
         detected_boxes[:] *= width,hight,width,hight
@@ -49,12 +49,12 @@ class InferenceTflitemodel(AbstractInferenceModel):
         model_path = Path(self.path_to_model)
         return model_path.parent
     
-    
 
-class InferenceTfliteEfficientmodel(AbstractInferenceModel):
+
+class InferenceTfliteImx8EfficientCpumodel(AbstractInferenceModel):
     def __init__(self,path_to_model:str):
         super().__init__(path_to_model)
-        self.interpreter = tf.lite.Interpreter(model_path=self.path_to_model)
+        self.interpreter = tflite.Interpreter(model_path=self.path_to_model)
         self.interpreter.allocate_tensors()
         self.model_input_details = self.interpreter.get_input_details()
         self.model_output_details = self.interpreter.get_output_details()

@@ -53,8 +53,12 @@ class ImageAnnotationReader(AbstractDatasetReader):
     def read_next_sample(self):
         image_identifier = self.images[self.counter].split(" ")[0]
         image = Image.open(os.path.join(self.image_path,self.images[self.counter]))
-        base_width, base_height = image.size
-        bounding_boxes = self._read_xml_annotation(os.path.join(self.annotation_path,self.annotations[self.counter]))
+        current_annotation = ""
+        for annotation in self.annotations:
+            if image_identifier.split(".")[0]+".xml" in annotation:
+                current_annotation = annotation
+                break
+        bounding_boxes,base_width, base_height = self._read_xml_annotation(os.path.join(self.annotation_path,current_annotation))
         
         # RESIZE IMAGE
         resized_image = image.resize(self.image_input_size[1:3])
@@ -80,6 +84,8 @@ class ImageAnnotationReader(AbstractDatasetReader):
             file_data = file.read() # read file contents   
             # parse data using package
             dict_data = xmltodict.parse(file_data) 
+            image_properties = dict_data['annotation']['size']
+            
             for object in dict_data['annotation']['object']:
                         if object == 'name':
                             xmin = int(float(dict_data['annotation']['object']['bndbox']['xmin']))
@@ -94,4 +100,4 @@ class ImageAnnotationReader(AbstractDatasetReader):
                             xmax = int(float(object['bndbox']['xmax']))
                             ymax = int(float(object['bndbox']['ymax']))
                             bbox_coordinates.append([xmin, ymin, xmax, ymax])
-        return bbox_coordinates
+        return bbox_coordinates, int(image_properties['width']),int(image_properties['height'])

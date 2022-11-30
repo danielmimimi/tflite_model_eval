@@ -1,5 +1,5 @@
 from pathlib import Path
-from inference_tflite_model import AbstractInferenceModel
+from inference.abstract_inference_model import AbstractInferenceModel
 import tflite_runtime.interpreter as tflite
 import cv2 
 import numpy as np
@@ -75,9 +75,9 @@ class InferenceTfliteImx8SsdCpumodel(AbstractInferenceModel):
         self.interpreter.invoke()
         hight,width = self.input_image_size[1:3]
         # get realtive bbox coords
-        detected_class_labels =  np.squeeze(self.interpreter.get_tensor(self.model_output_details[3]['index']).astype(int))
-        detected_boxes =  np.squeeze(self.interpreter.get_tensor( self.model_output_details[1]['index']))
-        detected_scores =  np.squeeze(self.interpreter.get_tensor( self.model_output_details[0]['index']))
+        detected_class_labels =  np.squeeze(self.interpreter.get_tensor(self.model_output_details[1]['index']).astype(int))
+        detected_boxes =  np.squeeze(self.interpreter.get_tensor( self.model_output_details[0]['index']))
+        detected_scores =  np.squeeze(self.interpreter.get_tensor( self.model_output_details[2]['index']))
 
         detected_boxes = detected_boxes[:, (1,0,3,2)]
         detected_boxes[:] *= width,hight,width,hight
