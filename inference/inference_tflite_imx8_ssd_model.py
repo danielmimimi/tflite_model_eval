@@ -50,6 +50,7 @@ class InferenceTfliteImx8SsdNpumodel(AbstractInferenceModel):
         return model_path.parent
     
 
+
 class InferenceTfliteImx8SsdCpumodel(AbstractInferenceModel):
     def __init__(self,path_to_model:str):
         super().__init__(path_to_model)

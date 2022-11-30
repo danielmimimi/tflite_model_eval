@@ -1,7 +1,8 @@
 import argparse
 from dataset_reader import ImageAnnotationReader
+from inference.inference_tflite_imx8_ssd_model import InferenceTfliteImx8SsdNpumodel,InferenceTfliteImx8SsdCpumodel
 
-from inference.inference_tflite_imx8_ssd_npu_model import InferenceTfliteImx8SsdCpumodel, InferenceTfliteImx8SsdNpumodel
+
 from result_generation import ResultGeneration
 
 def str2bool(v):
@@ -28,7 +29,6 @@ parser.add_argument('-i','--iou_treshold',default=0.5)
 
 if __name__ == '__main__':
     args = parser.parse_args()
-
     if not args.delegate_path:
         model = InferenceTfliteImx8SsdCpumodel(args.model_path)
     elif args.delegate_path == "/usr/lib/libvx_delegate.so":
