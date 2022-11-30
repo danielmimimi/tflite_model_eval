@@ -24,7 +24,6 @@ parser = argparse.ArgumentParser(
 parser.add_argument('-m','--model_path',default="/tflite_model_eval/test/model/efficient_det_1_320_320_002.tflite")
 parser.add_argument('-t','--test_images_path',default="/tflite_model_eval/test/data/record")
 parser.add_argument('-s','--save_path',default="/tflite_model_eval/test/save")
-# parser.add_argument('-l','--only_load', type=str2bool, nargs='?',const=True, default=False)
 parser.add_argument('-l','--only_load_path',default="")
 parser.add_argument('-d','--test_data_type',default="regular")
 parser.add_argument('-n','--output_name',default="CPU_WINDOW_SEFFICIENT_")

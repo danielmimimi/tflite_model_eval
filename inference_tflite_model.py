@@ -114,3 +114,4 @@ class InferenceTfliteEfficientmodel(AbstractInferenceModel):
     def get_model_dir(self)->str:
         model_path = Path(self.path_to_model)
         return model_path.parent
+    
