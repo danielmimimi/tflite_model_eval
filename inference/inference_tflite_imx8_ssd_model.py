@@ -26,7 +26,7 @@ class InferenceTfliteImx8SsdNpumodel(AbstractInferenceModel):
             self.interpreter.set_tensor(self.model_input_details[0]["index"],np.expand_dims(np.array(image),0))
         else:
             raise Exception("No such Datatype in models")
-        self.interpreter.invoke()
+        self.inference()
         hight,width = self.input_image_size[1:3]
         # get realtive bbox coords
         detected_class_labels =  np.squeeze(self.interpreter.get_tensor(self.model_output_details[1]['index']).astype(int))
@@ -72,7 +72,7 @@ class InferenceTfliteImx8SsdCpumodel(AbstractInferenceModel):
             self.interpreter.set_tensor(self.model_input_details[0]["index"],np.expand_dims(np.array(image),0))
         else:
             raise Exception("No such Datatype in models")
-        self.interpreter.invoke()
+        self.inference()
         hight,width = self.input_image_size[1:3]
         # get realtive bbox coords
         detected_class_labels =  np.squeeze(self.interpreter.get_tensor(self.model_output_details[1]['index']).astype(int))

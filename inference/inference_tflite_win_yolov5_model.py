@@ -1,6 +1,6 @@
 from pathlib import Path
 from inference.abstract_inference_model import AbstractInferenceModel
-import tflite_runtime.interpreter as tflite
+import tensorflow as tf
 import cv2 
 import numpy as np
 
@@ -84,11 +84,10 @@ def nms(rect_box,scores,nms_threshold):
 	return temp_iou
 
 
-class InferenceTfliteImx8Yolov5Npumodel(AbstractInferenceModel):
+class InferenceTfliteImx8Yolov5model(AbstractInferenceModel):
     def __init__(self,path_to_model:str):
         super().__init__(path_to_model)
-        delegate = [tflite.load_delegate("/usr/lib/libvx_delegate.so")]
-        self.interpreter = tflite.Interpreter(model_path=self.path_to_model,experimental_delegates=delegate)
+        self.interpreter = tf.lite.Interpreter(model_path=self.path_to_model)
         self.interpreter.allocate_tensors()
         self.model_input_details = self.interpreter.get_input_details()
         self.model_output_details = self.interpreter.get_output_details()
@@ -107,6 +106,7 @@ class InferenceTfliteImx8Yolov5Npumodel(AbstractInferenceModel):
         else:
             raise Exception("No such Datatype in models")
         self.inference()
+        
         hight,width = self.input_image_size[1:3]
         output_data = self.interpreter.get_tensor(self.model_output_details[0]['index'])
         if 'quantization' in self.model_output_details[0]:
@@ -182,114 +182,3 @@ class InferenceTfliteImx8Yolov5Npumodel(AbstractInferenceModel):
                 detected_boxes.append([left,top,right,bottom])
                 detected_scores.append(score)
         return detected_boxes, detected_scores
-
-
-class InferenceTfliteImx8Yolov5Cpumodel(AbstractInferenceModel):
-    def __init__(self,path_to_model:str):
-        super().__init__(path_to_model)
-        self.interpreter = tflite.Interpreter(model_path=self.path_to_model)
-        self.interpreter.allocate_tensors()
-        self.model_input_details = self.interpreter.get_input_details()
-        self.model_output_details = self.interpreter.get_output_details()
-        self.input_image_size = self.model_input_details[0]['shape']
-
-    def predict(self,image:np.array):
-        """Bilder in Ordner speichern, returns [BBOX(tl,br)]. box format: [x0, y0, x1, y1]"""
-        if self.model_input_details[0]['dtype'] == np.float32 :
-            if len(np.array(image).shape) == 2 :
-                image = cv2.cvtColor(np.array(image),cv2.COLOR_GRAY2BGR)
-            self.interpreter.set_tensor(self.model_input_details[0]["index"],np.expand_dims(np.array(image),0).astype(np.float32))
-        elif self.model_input_details[0]['dtype'] == np.uint8 :
-            if len(np.array(image).shape) == 2 :
-                image = cv2.cvtColor(np.array(image),cv2.COLOR_GRAY2BGR)
-            self.interpreter.set_tensor(self.model_input_details[0]["index"],np.expand_dims(np.array(image),0))
-        else:
-            raise Exception("No such Datatype in models")
-        self.inference()
-        hight,width = self.input_image_size[1:3]
-        
-        output_data = self.interpreter.get_tensor(self.model_output_details[0]['index'])
-        if 'quantization' in self.model_output_details[0]:
-            scale, zero_point = self.model_output_details[0]['quantization']
-            if not (scale == 0 & zero_point==0):
-                if scale == 0:
-                    output_data=output_data - zero_point
-                else:
-                    output_data= scale * (output_data - zero_point)
-        
-        
-        detected_boxes, detected_scores = self._prepare_yolo_output(output_data)
-        
-        return detected_boxes, detected_scores
-    
-    def get_image_size(self):
-        return self.input_image_size
-     
-    def get_model_name(self)->str:
-        model_path = Path(self.path_to_model)
-        return model_path.stem
-    
-    def get_model_dir(self)->str:
-        model_path = Path(self.path_to_model)
-        return model_path.parent  
-        
-    def _prepare_yolo_output(self,output_data):
-        hight,width = self.input_image_size[1:3]
-        
-        conf_threshold = 0.2
-        x=np.squeeze(output_data)
-        xc=x[...,4]>conf_threshold
-        x=x[xc]
-        
-        nms_threshold=0.45
-        max_wh = 7680  
-        
-        x[...,0]*=width
-        x[...,1]*=hight
-        x[...,2]*=width
-        x[...,3]*=hight
-        
-        detected_boxes = []
-        detected_scores = []
-        if x.shape[0]:
-            x[:, 5:] *= x[:, 4:5]
-            rect_box=xywhtoxyxy(x[:, :4])
-            conf=np.max(x[:,5:],axis=1)
-            index=np.argmax(x[:,5:],axis=1)
-            if len(rect_box.shape)==1:
-                x=np.concatenate((rect_box,conf,index))
-            else:
-                conf=conf.reshape(len(conf),1)
-                index=index.reshape(len(index),1)
-                x=np.concatenate((rect_box,conf,index),axis=1)
-                
-            if len(x.shape)==1:
-                x=x.reshape(1,x.shape[0])
-          
-            c=x[:,5:6]*max_wh
-            boxes, scores = x[:, :4] + c, x[:, 4]
-            result_index=nms(boxes,scores,0.0)
-            
-            result=x[result_index]
-            result[:,:4]=scale_coords([width,hight],result[:,:4],[hight,width]).round()
-            num_result=result.shape[0]
-            
-            for i in range(0,num_result):
-                left=int(result[i][0])
-                top=int(result[i][1])
-                right=int(result[i][2])
-                bottom=int(result[i][3])
-
-                score=result[i][4]
-                class_id=result[i][5]
-                detected_boxes.append([left,top,right,bottom])
-                detected_scores.append(score)
-        return detected_boxes, detected_scores
-    
-
-    
-
-
-
-
-

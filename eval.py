@@ -199,7 +199,10 @@ class Evaluation(object):
         plt.grid()
 
         plt.tight_layout()
-
+        # Save values for summary
+        np.save(self.save_path.joinpath('recalls.npy'),recalls)
+        np.save(self.save_path.joinpath('precisions.npy'),precisions)
+        # Save plot
         path = self.save_path.joinpath('precisionRecallCurve.svg')
         plt.savefig(str(path))
         plt.close()

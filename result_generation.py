@@ -33,7 +33,6 @@ class ResultGeneration(object):
             draw_img.text((top_left[0],top_left[1]- 2), str(score),color="red")
         
         for ground_truth in ground_truth_bbox:
-            print(ground_truth)
             top_left = (int(ground_truth[0]),int(ground_truth[1]))
             bottom_right = (int(ground_truth[2]),int(ground_truth[3]))
             draw_img.rectangle((top_left,bottom_right), outline="cyan")
@@ -77,10 +76,13 @@ class ResultGeneration(object):
                 model_name = self.inference_model.get_model_name()
                 model_dir = self.inference_model.get_model_dir()
                 folder_to_save_path = os.path.join(model_dir,"saves")
-                if os.path.exists(folder_to_save_path):
-                    shutil.rmtree(folder_to_save_path)
-                os.makedirs(folder_to_save_path)
-                np.save(os.path.join(model_dir,"saves",model_name+".npy"),summarized_resuls)
+                # if os.path.exists(folder_to_save_path):
+                #     shutil.rmtree(folder_to_save_path)
+                try:
+                    os.makedirs(folder_to_save_path)
+                except:
+                    print("Save folder already exists")
+                np.save(os.path.join(model_dir,"saves",model_name+"_"+self.save_path.stem+".npy"),summarized_resuls)
         else:
             summarized_resuls = np.load(self.load,allow_pickle=True)
             for _ in range(0,number_of_images):
