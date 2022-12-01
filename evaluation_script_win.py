@@ -67,17 +67,18 @@ if __name__ == '__main__':
     result_generator = ResultGeneration(dataset_reader,model,save_file_name,args.only_load_path,args.filter_low_score,args.iou_treshold,args.save_only)
     summarized_results, images_analyzed = result_generator.start_evaluation()
     
-    
-    
-    # SEPARATION PD IMPORT
-    evaluation = Evaluation(summarized_results, images_analyzed,save_file_name,args.filter_low_score,args.iou_treshold)
-    evaluation.export()
-    
     # Save Inference Time
     times = model.save_inference_time(save_file_name)
     
-    general_summary = GeneralSummary(save_file_name.parent)
-    general_summary.create_summary()
+    if not args.save_only:
+        # SEPARATION PD IMPORT
+        evaluation = Evaluation(summarized_results, images_analyzed,save_file_name,args.filter_low_score,args.iou_treshold)
+        evaluation.export()
+        
+
+        
+        general_summary = GeneralSummary(save_file_name.parent)
+        general_summary.create_summary()
 
     
     

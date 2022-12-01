@@ -76,8 +76,6 @@ class ResultGeneration(object):
                 model_name = self.inference_model.get_model_name()
                 model_dir = self.inference_model.get_model_dir()
                 folder_to_save_path = os.path.join(model_dir,"saves")
-                # if os.path.exists(folder_to_save_path):
-                #     shutil.rmtree(folder_to_save_path)
                 try:
                     os.makedirs(folder_to_save_path)
                 except:
