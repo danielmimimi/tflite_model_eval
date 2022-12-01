@@ -8,11 +8,14 @@ from inference.abstract_inference_model import AbstractInferenceModel
 class InferenceTflitemodel(AbstractInferenceModel):
     def __init__(self,path_to_model:str):
         super().__init__(path_to_model)
-        self.interpreter = tf.lite.Interpreter(model_path=self.path_to_model)
-        self.interpreter.allocate_tensors()
-        self.model_input_details = self.interpreter.get_input_details()
-        self.model_output_details = self.interpreter.get_output_details()
-        self.input_image_size = self.model_input_details[0]['shape']
+        try:
+            self.interpreter = tf.lite.Interpreter(model_path=self.path_to_model)
+            self.interpreter.allocate_tensors()
+            self.model_input_details = self.interpreter.get_input_details()
+            self.model_output_details = self.interpreter.get_output_details()
+            self.input_image_size = self.model_input_details[0]['shape']
+        except:
+            print("could not read model")
 
     def predict(self,image:np.array):
         """Bilder in Ordner speichern, returns [BBOX(tl,br)]. box format: [x0, y0, x1, y1]"""
@@ -55,11 +58,14 @@ class InferenceTflitemodel(AbstractInferenceModel):
 class InferenceTfliteEfficientmodel(AbstractInferenceModel):
     def __init__(self,path_to_model:str):
         super().__init__(path_to_model)
-        self.interpreter = tf.lite.Interpreter(model_path=self.path_to_model)
-        self.interpreter.allocate_tensors()
-        self.model_input_details = self.interpreter.get_input_details()
-        self.model_output_details = self.interpreter.get_output_details()
-        self.input_image_size = self.model_input_details[0]['shape']
+        try:
+            self.interpreter = tf.lite.Interpreter(model_path=self.path_to_model)
+            self.interpreter.allocate_tensors()
+            self.model_input_details = self.interpreter.get_input_details()
+            self.model_output_details = self.interpreter.get_output_details()
+            self.input_image_size = self.model_input_details[0]['shape']
+        except:
+            print("could not read model")
 
     def predict(self,image:np.array):
         """Bilder in Ordner speichern, returns [BBOX(tl,br)]. box format: [x0, y0, x1, y1]"""
