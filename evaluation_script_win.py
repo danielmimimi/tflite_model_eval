@@ -23,7 +23,7 @@ parser = argparse.ArgumentParser(
                     description = 'What the program does',
                     epilog = 'Text at the bottom of help')
 
-parser.add_argument('-m','--model_path',default="/tflite_model_eval/test/model/ssd_lite_trial_009/ssdlite_1_320_320_COCO_trial_009.tflite")
+parser.add_argument('-m','--model_path',default="/tflite_model_eval/test/model/nxp_yolov5/yolov5s-int8.tflite")
 parser.add_argument('-t','--test_images_path',default="/tflite_model_eval/test/data/record")
 parser.add_argument('-s','--save_path',default="/tflite_model_eval/test/save")
 parser.add_argument('-d','--delegate_path',default="")
@@ -67,8 +67,9 @@ if __name__ == '__main__':
     result_generator = ResultGeneration(dataset_reader,model,save_file_name,args.only_load_path,args.filter_low_score,args.iou_treshold,args.save_only)
     summarized_results, images_analyzed = result_generator.start_evaluation()
     
-    # Save Inference Time
-    times = model.save_inference_time(save_file_name)
+    if not args.only_load_path: 
+        # Save Inference Time
+        times = model.save_inference_time(save_file_name)
     
     if not args.save_only:
         # SEPARATION PD IMPORT
